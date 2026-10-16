@@ -192,11 +192,11 @@ struct InventoryParams
     int initialInventory;
 
     // Valores calculados
-    double z;
-    double annualDemand;     // D
-    int eoq;                 // Q*
-    int safetyStock;         // SS
-    int reorderPoint;        // ROP
+    double z = 0;
+    double annualDemand = 0;   // D
+    int eoq = 0;               // Q*
+    int safetyStock = 0;       // SS
+    int reorderPoint = 0;      // ROP
 };
 
 double normalCdf(double z){
@@ -347,15 +347,39 @@ int main(){
         printStats(stats[city]);
     }
 
+    // Ejemplo predeterminado: S, H, L, nivel de servicio, inventario inicial
+    map<string,InventoryParams> defaults = {
+        {"Ciudad de México", {600, 3.0, 4, 0.95, 500}},
+        {"Guadalajara",      {500, 2.5, 5, 0.95, 350}},
+        {"Monterrey",        {550, 2.8, 3, 0.95, 400}},
+    };
+    const int DEFAULT_HORIZON = 30;
+
+    cout<<endl<<"=============================================================="<<endl
+        <<"MENU"<<endl
+        <<"  1. Correr ejemplo predeterminado"<<endl
+        <<"  2. Introducir parametros manualmente"<<endl;
+    int option = 0;
+    while(option != 1 && option != 2) option = (int)readValue("Opcion: ");
+    bool useDefaults = option == 1;
+
     map<string,InventoryParams> params;
     for(auto &[city, s] : stats){
         cout<<endl<<"PASO 1.2  Parametros de inventario para "<<city<<endl;
         InventoryParams p;
-        p.orderCost = readValue("  Costo por pedido S ($): ");
-        p.holdingCost = readValue("  Costo anual de mantener una unidad H ($): ");
-        p.leadTime = (int)readValue("  Tiempo de entrega L (dias): ");
-        p.serviceLevel = readValue("  Nivel de servicio (ej. 0.95): ");
-        p.initialInventory = (int)readValue("  Inventario inicial (unidades): ");
+        if(useDefaults && defaults.count(city)){
+            p = defaults[city];
+            cout<<fixed<<setprecision(2)
+                <<"  S = $"<<p.orderCost<<", H = $"<<p.holdingCost<<"/unidad/anio, L = "<<p.leadTime
+                <<" dias, nivel de servicio = "<<p.serviceLevel<<", inventario inicial = "<<p.initialInventory<<endl;
+        }
+        else{
+            p.orderCost = readValue("  Costo por pedido S ($): ");
+            p.holdingCost = readValue("  Costo anual de mantener una unidad H ($): ");
+            p.leadTime = (int)readValue("  Tiempo de entrega L (dias): ");
+            p.serviceLevel = readValue("  Nivel de servicio (ej. 0.95): ");
+            p.initialInventory = (int)readValue("  Inventario inicial (unidades): ");
+        }
 
         computeEOQ(p, s);
         printParams(p);
@@ -363,7 +387,9 @@ int main(){
     }
 
     // ----- Paso 2 -----
-    int horizon = (int)readValue("\nPASO 2  Horizonte de simulacion n (dias, mismo para todas las ciudades): ");
+    int horizon = DEFAULT_HORIZON;
+    if(useDefaults) cout<<endl<<"PASO 2  Horizonte de simulacion n = "<<horizon<<" dias"<<endl;
+    else horizon = (int)readValue("\nPASO 2  Horizonte de simulacion n (dias, mismo para todas las ciudades): ");
 
     vector<Simulation> simulations;
     for(auto &[city, p] : params){
