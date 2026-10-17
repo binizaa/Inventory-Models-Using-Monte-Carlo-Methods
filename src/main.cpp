@@ -9,6 +9,8 @@
 #include "ui/menu.h"
 #include "simulation/simulation.h"
 #include "analysis/stats.h"
+#include "simulation/montecarlo.h"
+#include "simulation/inventory.h"
 
 using namespace std;
 
@@ -57,12 +59,43 @@ int main(){
     if(useDefaults) cout<<endl<<"PASO 2  Horizonte de simulacion n = "<<horizon<<" dias"<<endl;
     else horizon = (int)readValue("\nPASO 2  Horizonte de simulacion n (dias, mismo para todas las ciudades): ");
 
+    ShortagePolicy policy = DEFAULT_POLICY;
+    if(!useDefaults) policy = readShortagePolicy();
+
     vector<Simulation> simulations;
     for(auto &[city, p] : params){
-        simulations.push_back(initSimulation(city, p, horizon));
+        simulations.push_back(initSimulation(city, p, horizon, policy));
 
         cout<<endl<<"PASO 2  Condiciones iniciales de "<<city<<endl;
         printSimulationSetup(simulations.back());
+    }
+
+    // ----- Pasos 3 y 4 -----
+    unsigned seed = DEFAULT_SEED;
+    if(useDefaults) cout<<endl<<"PASO 3  Semilla del generador = "<<seed<<endl;
+    else seed = (unsigned)readValue("\nPASO 3  Semilla del generador de numeros aleatorios: ");
+
+    for(size_t i = 0; i < simulations.size(); i++){
+        Simulation &sim = simulations[i];
+        vector<FreqRow> table = buildFrequencyTable(dailyDemand[sim.city]);
+        simulateDemand(sim, table, seed + i);
+
+        cout<<endl<<"=============================================================="<<endl;
+        cout<<"PASO 4  Demanda simulada de "<<sim.city<<"  (semilla "<<seed + i<<")"<<endl;
+        cout<<"=============================================================="<<endl;
+        printAssignmentTable(table);
+        cout<<endl;
+        printSimulatedDemand(sim, stats[sim.city]);
+    }
+
+    // ----- Paso 5.1 -----
+    for(Simulation &sim : simulations){
+        runInventory(sim);
+
+        cout<<endl<<"=============================================================="<<endl;
+        cout<<"PASO 5.1  Actualizacion del inventario de "<<sim.city<<"  ("<<policyName(sim.policy)<<")"<<endl;
+        cout<<"=============================================================="<<endl;
+        printInventoryLog(sim);
     }
 
     return 0;

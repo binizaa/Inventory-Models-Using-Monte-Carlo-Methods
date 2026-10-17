@@ -11,6 +11,17 @@ Pasos implementados:
    seguridad (SS) y punto de reorden (ROP).
 3. **Paso 2 · Horizonte de simulación:** condiciones iniciales y estructura del registro
    diario para cada ciudad.
+4. **Paso 3 · Números aleatorios:** un U_t ~ U(0,1) por día, generado con semilla fija
+   para que los resultados se puedan reproducir.
+5. **Paso 4 · Demanda simulada:** cada U_t se convierte en demanda con la distribución
+   empírica del paso 1: se elige el primer d_i cuya frecuencia relativa acumulada cumple
+   H_i ≥ U_t.
+6. **Paso 5.1 · Actualización del inventario:** I_t = I_{t-1} + R_t − D_t, ajustada a la
+   política de faltantes. El inventario físico nunca es negativo y las unidades no
+   atendidas se registran. Hay dos políticas:
+   - *Ventas perdidas* (predeterminada): la demanda que no se puede atender se pierde.
+   - *Pedidos pendientes*: la demanda no atendida se acumula y se surte cuando llega
+     inventario.
 
 ## Requisitos
 
@@ -37,11 +48,12 @@ MENU
   2. Introducir parametros manualmente
 ```
 
-- **Opción 1:** usa los parámetros de ejemplo definidos en `src/config/config.h` y un
-  horizonte de 30 días.
+- **Opción 1:** usa los parámetros de ejemplo definidos en `src/config/config.h`, un
+  horizonte de 30 días, la semilla 2026 y la política de ventas perdidas.
 - **Opción 2:** pide para cada ciudad el costo por pedido S, el costo anual de mantener
   una unidad H, el tiempo de entrega L (días), el nivel de servicio (por ejemplo, 0.95)
-  y el inventario inicial; al final pide el horizonte de simulación n.
+  y el inventario inicial; al final pide el horizonte de simulación n, la política de
+  faltantes y la semilla del generador de números aleatorios.
 
 Otros comandos:
 
@@ -74,5 +86,7 @@ src/
 ├── analysis/    stats.h, stats.cpp            paso 1.1
 │                eoq.h, eoq.cpp                paso 1.2
 ├── simulation/  simulation.h, simulation.cpp  paso 2
+│                montecarlo.h, montecarlo.cpp  pasos 3 y 4
+│                inventory.h, inventory.cpp    paso 5.1
 └── ui/          menu.h, menu.cpp              menú y captura de datos
 ```

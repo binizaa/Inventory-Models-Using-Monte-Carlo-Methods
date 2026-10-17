@@ -41,3 +41,12 @@ void printUserParams(const InventoryParams &p){
         <<"  S = $"<<p.orderCost<<", H = $"<<p.holdingCost<<"/unidad/anio, L = "<<p.leadTime
         <<" dias, nivel de servicio = "<<p.serviceLevel<<", inventario inicial = "<<p.initialInventory<<endl;
 }
+
+ShortagePolicy readShortagePolicy(){
+    cout<<"Politica de faltantes"<<endl
+        <<"  1. Ventas perdidas (la demanda no atendida se pierde)"<<endl
+        <<"  2. Pedidos pendientes (la demanda no atendida se surte despues)"<<endl;
+    int option = 0;
+    while(option != 1 && option != 2) option = (int)readValue("Opcion: ");
+    return (ShortagePolicy)option;
+}
