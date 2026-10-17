@@ -63,7 +63,6 @@ guardan en `resultados/`.
 - `requirements.txt`: dependencias de Python, actualmente Matplotlib y pandas.
 - `Makefile`: reglas para compilar los archivos C++ con `g++`, ejecutar el programa y limpiar los objetos generados.
 - `.gitignore`: excluye del control de versiones el entorno virtual, ejecutables, objetos y caché de Python.
-- `5.3.- Actividad de simulación MonteCarlo.pdf`: documento de referencia de la actividad.
 - `5.3.- demanda_simulada_tres_ubicaciones_mexico.xlsx`: hoja de cálculo de referencia con datos de demanda para tres ubicaciones.
 
 ### Código C++ (`src/`)
@@ -78,7 +77,7 @@ guardan en `resultados/`.
 - `simulation/simulation.cpp` y `simulation/simulation.h`: inicializan y ejecutan las simulaciones, generan demanda y muestran registros diarios.
 - `ui/menu.cpp` y `ui/menu.h`: solicitan parámetros por consola y muestran opciones e información de la simulación.
 
-### Resultados de ejemplo (`resultados/`)
+### Resultados (`resultados/`)
 
 - `comparacion.png`: gráfica comparativa de indicadores entre ciudades.
 - `demanda_diaria.png`: visualización de la demanda diaria por ciudad.
