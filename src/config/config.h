@@ -6,10 +6,6 @@
 
 #include "analysis/eoq.h"
 
-// ---------------------------------------------------------------------------
-// Ejemplo predeterminado (opcion 1 del menu)
-// S, H, L, nivel de servicio, inventario inicial
-// ---------------------------------------------------------------------------
 
 const std::string DATA_FILE = "datos.csv";
 
