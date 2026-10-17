@@ -1,4 +1,4 @@
 ciudad,demanda_total,demanda_promedio,pedidos,unidades_pedidas,inv_promedio,inv_minimo,dias_faltante,unidades_no_atendidas,nivel_servicio,costo_ordenar,costo_mantener,costo_total
-Ciudad de México,2040,68,1,3037,2074,281,0,0,1,600,511.4,1111
-Guadalajara,1014,33.8,1,2503,1897,209,0,0,1,500,389.8,889.8
-Monterrey,1915,63.83,1,2593,1533,154,0,0,1,550,352.9,902.9
+Ciudad de México,2040,68.0000,1,3037,2073.8667,281,0,0,1.0000,600.0000,511.3644,1111.3644
+Guadalajara,1014,33.8000,1,2503,1897.0333,209,0,0,1.0000,500.0000,389.8014,889.8014
+Monterrey,1915,63.8333,1,2593,1533.4667,154,0,0,1.0000,550.0000,352.9074,902.9074

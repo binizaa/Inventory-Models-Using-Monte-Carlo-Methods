@@ -19,7 +19,7 @@ bool exportResults(const string &dir, const vector<Simulation> &sims, const vect
     }
 
     daily<<"ciudad,dia,aleatorio,inv_inicial,recepcion,demanda,inv_disponible,faltante,"
-           "demanda_pendiente,transito,prox_llegada,posicion,pedido,inv_final,rop,ss\n";
+           "demanda_pendiente,transito,prox_llegada,posicion,pedido,inv_final,rop,ss,eoq\n";
     orders<<"ciudad,pedido,cantidad,emision,recepcion\n";
     summary<<"ciudad,demanda_total,demanda_promedio,pedidos,unidades_pedidas,inv_promedio,"
              "inv_minimo,dias_faltante,unidades_no_atendidas,nivel_servicio,"
@@ -34,14 +34,14 @@ bool exportResults(const string &dir, const vector<Simulation> &sims, const vect
                  <<r.inventoryAfterDemand<<','<<r.unmetDemand<<','<<r.backorder<<','
                  <<r.pendingUnits<<','<<r.nextArrivalDay<<','<<r.inventoryPosition<<','
                  <<r.orderPlaced<<','<<r.finalInventory<<','
-                 <<s.params.reorderPoint<<','<<s.params.safetyStock<<'\n';
+                 <<s.params.reorderPoint<<','<<s.params.safetyStock<<','<<s.params.eoq<<'\n';
 
         for(size_t k = 0; k < s.orders.size(); k++)
             orders<<s.city<<','<<k + 1<<','<<s.orders[k].quantity<<','
                   <<s.orders[k].issueDay<<','<<s.orders[k].arrivalDay<<'\n';
 
         const Indicators &ind = inds[i];
-        summary<<s.city<<','<<ind.totalDemand<<','<<setprecision(4)<<ind.avgDemand<<','
+        summary<<s.city<<','<<ind.totalDemand<<','<<fixed<<setprecision(4)<<ind.avgDemand<<','
                <<ind.orders<<','<<ind.unitsOrdered<<','<<ind.avgInventory<<','
                <<ind.minInventory<<','<<ind.shortageDays<<','<<ind.unmetUnits<<','
                <<ind.serviceLevel<<','<<ind.orderingCost<<','<<ind.holdingCost<<','

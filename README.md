@@ -89,6 +89,26 @@ Se generan en `resultados/`:
 - `pedidos.png`: fechas de emisión y recepción de cada pedido.
 - `comparacion.png`: costos, nivel de servicio y faltantes entre las tres ciudades.
 
+## Interfaz de escritorio
+
+`interfaz.py` abre una ventana para capturar los parámetros de las tres ciudades,
+simular y revisar los resultados sin usar el menú de la terminal. Por dentro compila y
+ejecuta el mismo programa en C++ (opción 2 del menú).
+
+```bash
+.venv/bin/python interfaz.py        # Windows: .venv\Scripts\python interfaz.py
+```
+
+Pestañas: **Resumen** (Q\*, SS, ROP e indicadores por ciudad), **Registro diario** (tabla
+del paso 5.3 y pedidos de la ciudad elegida), **Demanda**, **Inventario**, **Pedidos**,
+**Comparación** (gráficas) y **Salida del programa** (lo que imprime `./main`, incluido el
+paso 1.1).
+
+Usa Tkinter. En macOS con Python de Homebrew hay que instalarlo aparte:
+`brew install python-tk@3.14` (con la versión de tu Python). En Windows ya viene incluido.
+En Windows el programa debe estar compilado antes (`main.exe`); en macOS/Linux la
+interfaz corre `make` sola.
+
 ## Otros comandos
 
 
@@ -118,4 +138,5 @@ src/
 │                indicators.h, indicators.cpp  paso 6
 └── ui/          menu.h, menu.cpp              menú y captura de datos
 graficas.py                                    gráficas del paso 6
+interfaz.py                                    interfaz de escritorio (Tkinter)
 ```
