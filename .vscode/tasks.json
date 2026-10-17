@@ -1,0 +1,40 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "cppbuild",
+            "label": "Compilar proyecto (MSYS2 UCRT64)",
+            "command": "C:\\msys64\\ucrt64\\bin\\g++.exe",
+            "args": [
+                "-std=c++17",
+                "-Wall",
+                "-Wextra",
+                "-Wpedantic",
+                "-g",
+                "-Isrc",
+                "-o",
+                "${workspaceFolder}\\main.exe",
+                "${workspaceFolder}\\src\\main.cpp",
+                "${workspaceFolder}\\src\\analysis\\eoq.cpp",
+                "${workspaceFolder}\\src\\analysis\\stats.cpp",
+                "${workspaceFolder}\\src\\data\\data.cpp",
+                "${workspaceFolder}\\src\\simulation\\simulation.cpp",
+                "${workspaceFolder}\\src\\ui\\menu.cpp"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "env": {
+                    "PATH": "C:\\msys64\\ucrt64\\bin;C:\\msys64\\usr\\bin;${env:PATH}"
+                }
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Compila todos los archivos del proyecto"
+        }
+    ]
+}

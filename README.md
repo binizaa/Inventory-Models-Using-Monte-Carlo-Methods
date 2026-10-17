@@ -14,20 +14,34 @@ Pasos implementados:
 
 ## Requisitos
 
-- Un compilador de C++17 (`g++` o `clang++`)
-- `make`
+- Un compilador de C++17 (`g++`); en Windows se recomienda MSYS2 UCRT64.
+- `make` solo es necesario para usar los comandos del `Makefile`.
 
 ## Cómo correrlo
 
-Desde la carpeta de la actividad:
+Abre **la carpeta raíz del repositorio** en VS Code. En Windows, con MSYS2 UCRT64
+instalado, puedes compilar y depurar el proyecto con **F5**. La tarea de VS Code compila
+todos los archivos necesarios, y la configuración de depuración usa la raíz como
+directorio de trabajo para encontrar `datos.csv`.
 
-```bash
-cd "Actividad 4.4"
-make run
+Para compilar y ejecutar manualmente desde PowerShell, en la raíz del repositorio:
+
+```powershell
+g++ -std=c++17 -Wall -Wextra -Wpedantic -Isrc -o main.exe src\main.cpp src\analysis\eoq.cpp src\analysis\stats.cpp src\data\data.cpp src\simulation\simulation.cpp src\ui\menu.cpp
+.\main.exe
 ```
 
-`make run` compila el programa y lo ejecuta. Debe correrse desde esta carpeta para que
-encuentre `datos.csv`.
+Si ejecutas `g++` desde una terminal normal de Windows, añade
+`C:\msys64\ucrt64\bin` y `C:\msys64\usr\bin` al `PATH` y abre una terminal nueva. Esto
+permite que el compilador encuentre sus herramientas y que el programa encuentre sus DLL
+al ejecutarse.
+
+Si tienes `make` instalado, los comandos del `Makefile` también deben ejecutarse desde
+la raíz del repositorio:
+
+```bash
+make run
+```
 
 Al iniciar aparece un menú:
 
@@ -46,16 +60,9 @@ MENU
 Otros comandos:
 
 ```bash
-make         # solo compila (genera el ejecutable ./main)
-./main       # ejecuta el programa ya compilado
+make         # solo compila (genera el ejecutable main)
+./main       # ejecuta el programa ya compilado (Windows: .\main.exe)
 make clean   # borra el ejecutable y los archivos .o
-```
-
-Para compilar sin `make`:
-
-```bash
-g++ -std=c++17 -Isrc -o main src/*.cpp src/*/*.cpp
-./main
 ```
 
 ## Datos

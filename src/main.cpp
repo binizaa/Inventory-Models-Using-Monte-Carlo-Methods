@@ -67,3 +67,34 @@ int main(){
 
     return 0;
 }
+
+"""
+// ----- Paso 2 y Ejecución -----
+    int horizon = DEFAULT_HORIZON;
+    if(useDefaults) cout<<endl<<"PASO 2  Horizonte de simulacion n = "<<horizon<<" dias"<<endl;
+    else horizon = (int)readValue("\nPASO 2  Horizonte de simulacion n (dias, mismo para todas las ciudades): ");
+
+    vector<Simulation> simulations;
+    for(auto &[city, p] : params){
+        Simulation sim = initSimulation(city, p, horizon);
+
+        // EXTRAER LA DISTRIBUCIÓN (Ajusta los nombres 'demanda' y 'probAcumulada' según tu struct real de la tabla)
+        auto freqTable = buildFrequencyTable(dailyDemand[city]);
+        for(const auto &row : freqTable) {
+            sim.demands.push_back(row.demanda);
+            sim.probsAcumuladas.push_back(row.probAcumulada);
+        }
+
+        simulations.push_back(sim);
+
+        cout<<endl<<"PASO 2  Condiciones iniciales de "<<city<<endl;
+        printSimulationSetup(simulations.back());
+
+        // EJECUTAR PASOS 3, 4, 5 y 6
+        cout<<endl<<"Ejecutando simulacion para "<<city<<"..."<<endl;
+        correrSimulacion(simulations.back());
+    }
+
+    return 0;
+}
+"""
