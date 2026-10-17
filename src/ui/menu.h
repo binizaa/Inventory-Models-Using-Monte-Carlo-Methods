@@ -4,7 +4,6 @@
 #include <string>
 
 #include "analysis/eoq.h"
-#include "simulation/simulation.h"
 
 // ---------------------------------------------------------------------------
 // Entrada del usuario
@@ -22,8 +21,5 @@ MenuOption askMenuOption();
 InventoryParams readParams();
 
 void printUserParams(const InventoryParams &p);
-
-// Pide la politica de faltantes: 1 = ventas perdidas, 2 = pedidos pendientes
-ShortagePolicy readShortagePolicy();
 
 #endif

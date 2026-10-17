@@ -5,7 +5,6 @@
 #include <string>
 
 #include "analysis/eoq.h"
-#include "simulation/simulation.h"
 
 // ---------------------------------------------------------------------------
 // Ejemplo predeterminado (opcion 1 del menu)
@@ -21,12 +20,5 @@ const std::map<std::string,InventoryParams> DEFAULT_PARAMS = {
 };
 
 const int DEFAULT_HORIZON = 30;
-
-// Semilla del generador de numeros aleatorios (paso 3).
-// Cada ciudad usa semilla + su indice para que sus simulaciones sean independientes.
-const unsigned DEFAULT_SEED = 2026;
-
-// Politica de faltantes (paso 5.1): LOST_SALES o BACKORDERS
-const ShortagePolicy DEFAULT_POLICY = LOST_SALES;
 
 #endif
