@@ -41,6 +41,8 @@ struct Simulation
     std::vector<PendingOrder> pending;    // pedidos emitidos aun no recibidos
     std::vector<PendingOrder> orders;     // historial de pedidos (emision y recepcion)
     std::vector<DayRecord> records;       // registro dia t = 1..n
+    std::vector<int> demands;
+    std::vector<double> probsAcumuladas;
 };
 
 Simulation initSimulation(const std::string &city, const InventoryParams &params, int horizon);
