@@ -10,7 +10,6 @@ void updateInventory(Simulation &sim, DayRecord &record){
     int t = record.day;
     record.initialInventory = sim.inventory;
 
-    // R_t: pedidos cuya fecha de recepcion es hoy
     record.received = 0;
     for(const PendingOrder &o : sim.pending)
         if(o.arrivalDay == t) record.received += o.quantity;
@@ -21,12 +20,10 @@ void updateInventory(Simulation &sim, DayRecord &record){
     int available = sim.inventory + record.received;
 
     if(sim.policy == LOST_SALES){
-        // Se entrega lo que alcance; el resto se pierde
         record.served = min(available, record.demand);
         record.unmetDemand = record.demand - record.served;
     }
     else{
-        // Primero se surte la demanda pendiente y despues la del dia
         int requested = sim.backlog + record.demand;
         record.served = min(available, requested);
         int servedToday = max(0, record.served - sim.backlog);
@@ -34,11 +31,10 @@ void updateInventory(Simulation &sim, DayRecord &record){
         sim.backlog = requested - record.served;
     }
 
-    sim.inventory = available - record.served;   // inventario fisico >= 0
+    sim.inventory = available - record.served;   
     record.inventoryAfterDemand = sim.inventory;
     record.backlog = sim.backlog;
 
-    // Pedidos en transito y posicion de inventario al cierre del dia
     record.pendingUnits = pendingUnits(sim);
     record.nextArrivalDay = 0;
     for(const PendingOrder &o : sim.pending)
