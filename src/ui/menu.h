@@ -17,7 +17,7 @@ enum MenuOption { DEFAULT_EXAMPLE = 1, MANUAL_INPUT = 2 };
 // Muestra el menu y devuelve la opcion elegida
 MenuOption askMenuOption();
 
-// Pide S, H, L, nivel de servicio e inventario inicial
+// Pide S, H, L, nivel de servicio, inventario inicial y pedido pendiente inicial
 InventoryParams readParams();
 
 void printUserParams(const InventoryParams &p);

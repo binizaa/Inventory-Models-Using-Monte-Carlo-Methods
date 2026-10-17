@@ -12,7 +12,7 @@
 struct deliver
 {
     int amount;
-    int day;        // dia del anio (1 = 01/01)
+    int day;      
     std::string city;
 };
 

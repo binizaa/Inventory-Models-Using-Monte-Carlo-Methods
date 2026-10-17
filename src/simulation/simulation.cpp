@@ -1,16 +1,21 @@
 #include "simulation/simulation.h"
+#include <algorithm>
+#include <iomanip>
 #include <iostream>
 #include <random>
 #include <vector>
 
 using namespace std;
 
-Simulation initSimulation(const string &city, const InventoryParams &params, int horizon){
+Simulation initSimulation(const string &city, const InventoryParams &params, int horizon, unsigned seed){
     Simulation sim;
     sim.city = city;
     sim.params = params;
     sim.horizon = horizon;
+    sim.seed = seed;
     sim.inventory = params.initialInventory;
+    if(params.initialPendingQty > 0)
+        sim.pending.push_back({params.initialPendingQty, 0, params.initialPendingArrival});
     sim.records.reserve(horizon);
     return sim;
 }
@@ -21,24 +26,57 @@ void printSimulationSetup(const Simulation &sim){
 
     cout<<"  Horizonte:              "<<sim.horizon<<" dias"<<endl
         <<"  Inventario inicial:     "<<sim.inventory<<endl
-        <<"  Pedidos pendientes:     "<<sim.pending.size()<<" ("<<pendingUnits<<" unidades)"<<endl
+        <<"  Pedidos pendientes:     "<<sim.pending.size()<<" ("<<pendingUnits<<" unidades)"<<endl;
+    for(const PendingOrder &o : sim.pending)
+        cout<<"    - "<<o.quantity<<" unidades, llegan el dia "<<o.arrivalDay<<endl;
+    cout<<"  Semilla:                "<<sim.seed<<endl
         <<"  Posicion de inventario: "<<sim.inventory + pendingUnits<<endl
         <<"  Politica:               pedir Q* = "<<sim.params.eoq
-        <<" cuando posicion <= ROP = "<<sim.params.reorderPoint<<endl
-        <<"  Registro diario:        Dia | Inv. inicial | Recepcion | Demanda |"
-        <<" Inv. tras demanda | Faltante | En transito | Prox. recepcion |"
-        <<" Posicion | Pedido | Inv. final"<<endl;
+        <<" cuando posicion <= ROP = "<<sim.params.reorderPoint<<endl;
+}
+
+void printDailyRecords(const Simulation &sim){
+    cout<<endl<<"PASO 5.3  Registro diario de "<<sim.city<<endl;
+    cout<<right
+        <<setw(4)<<"Dia"<<setw(10)<<"Aleatorio"<<setw(10)<<"Inv. ini"<<setw(10)<<"Recepcion"
+        <<setw(9)<<"Demanda"<<setw(11)<<"Inv. disp."<<setw(10)<<"Faltante"<<setw(11)<<"Dem. pend."
+        <<setw(11)<<"Transito"<<setw(11)<<"Prox. lleg"<<setw(10)<<"Posicion"
+        <<setw(8)<<"Pedido"<<setw(10)<<"Inv. fin"<<endl;
+
+    for(const DayRecord &r : sim.records){
+        cout<<setw(4)<<r.day<<setw(10)<<fixed<<setprecision(4)<<r.random
+            <<setw(10)<<r.initialInventory<<setw(10)<<r.received
+            <<setw(9)<<r.demand<<setw(11)<<r.inventoryAfterDemand<<setw(10)<<r.unmetDemand<<setw(11)<<r.backorder
+            <<setw(11)<<r.pendingUnits;
+        if(r.nextArrivalDay > 0) cout<<setw(11)<<r.nextArrivalDay;
+        else cout<<setw(11)<<"-";
+        cout<<setw(10)<<r.inventoryPosition<<setw(8)<<r.orderPlaced
+            <<setw(10)<<r.finalInventory<<endl;
+    }
+}
+
+void printOrders(const Simulation &sim){
+    cout<<endl<<"Pedidos emitidos:"<<endl;
+    if(sim.orders.empty()){
+        cout<<"  (ninguno)"<<endl;
+        return;
+    }
+    cout<<right<<setw(6)<<"Pedido"<<setw(10)<<"Cantidad"<<setw(10)<<"Emision"<<setw(12)<<"Recepcion"<<endl;
+    for(size_t i = 0; i < sim.orders.size(); i++){
+        const PendingOrder &o = sim.orders[i];
+        cout<<setw(6)<<i + 1<<setw(10)<<o.quantity<<setw(10)<<o.issueDay<<setw(12)<<o.arrivalDay;
+        if(o.arrivalDay > sim.horizon) cout<<"  (despues del horizonte)";
+        cout<<endl;
+    }
 }
 
 // Paso 3
-vector<double> generadorNumerosAleatorios(int horizon, int seed = 12345){
+vector<double> generadorNumerosAleatorios(int horizon, unsigned seed){
     vector<double> NumerosAleatorios(horizon);
     NumerosAleatorios.reserve(horizon);
     
-    // establecemos una semilla para el generador de numeros aleatorios
     mt19937 generator(seed);
 
-    // distribucion uniforme en el rango [0, 1)
     uniform_real_distribution<double> distribution(0.0, 1.0);
 
     for(int i = 0; i < horizon; ++i){
@@ -50,37 +88,30 @@ vector<double> generadorNumerosAleatorios(int horizon, int seed = 12345){
 // Paso 4
 int getDemandaSimulada(double ut, const vector<int>& demands, const vector<double>& probsAcumuladas){
     // buscamos el primer valor de la distribucion acumulada que sea mayor o igual a ut
-    for (int i = 0; i < probsAcumuladas.size(); i++){
+    for (size_t i = 0; i < probsAcumuladas.size(); i++){
         if (probsAcumuladas[i] >= ut){
             return demands[i];
         }
     }
-    // si no encontramos un valor, retornamos el ultimo valor de la distribucion
     return demands.back();
 }
 
 void correrSimulacion(Simulation &sim){ // para todo el horizonte de simulacion
-    // vector<int> demands = {0, 10, 20, 30};
-    // vector<double> probsAcumuladas = {0.1, 0.3, 0.7, 1.0};
     
-    vector<double> aleatoriosDiarios = generadorNumerosAleatorios(sim.horizon);
+    vector<double> aleatoriosDiarios = generadorNumerosAleatorios(sim.horizon, sim.seed);
 
-    int faltanteAcumulado = 0;
+    int demandaPendiente = 0;
     
-    // ciclo de simulacion para cada dia
     for (int t = 0; t < sim.horizon; t++){
         DayRecord record;
         record.day = t + 1;
 
-        // inventario inicial
         record.initialInventory = (t == 0) ? sim.inventory : sim.records.back().finalInventory;
 
         record.received = 0;
-        // verificamos si hay pedidos pendientes que lleguen hoy
         for (auto it = sim.pending.begin(); it != sim.pending.end(); ){
             if (it->arrivalDay == record.day){
                 record.received += it->quantity;
-                sim.orders.push_back(*it); // agregamos el pedido recibido al historial de pedidos
                 it = sim.pending.erase(it); // eliminamos el pedido recibido de la lista de pendientes
             } else {
                 ++it;
@@ -88,38 +119,33 @@ void correrSimulacion(Simulation &sim){ // para todo el horizonte de simulacion
         }
         
         double Ut = aleatoriosDiarios[t];
-        // obtenemos la demanda simulada para el dia t
-        record.demand = getDemandaSimulada(Ut, demands, probsAcumuladas);
+        record.random = Ut;
+        record.demand = getDemandaSimulada(Ut, sim.demands, sim.probsAcumuladas);
 
-        // Paso 5.1 Balance de inventario
+        int disponible = record.initialInventory + record.received;
 
-        int invDespuesDemanda = record.initialInventory + record.received - record.demand - faltanteAcumulado;
-    
-        if (invDespuesDemanda < 0){
-            record.unmetDemand = -invDespuesDemanda;
-            // guardamos el faltante acumulado para el siguiente dia
-            faltanteAcumulado = record.unmetDemand;
-            record.finalInventory = 0;
-        } else {
-            faltanteAcumulado = 0;
-            record.unmetDemand = 0;
-            record.finalInventory = invDespuesDemanda;
-        }
+        int surtidoPendiente = min(demandaPendiente, disponible);
+        disponible -= surtidoPendiente;
+        demandaPendiente -= surtidoPendiente;
 
-        record.inventoryAfterDemand = invDespuesDemanda;
+        int surtidoHoy = min(record.demand, disponible);
+        disponible -= surtidoHoy;
+        record.unmetDemand = record.demand - surtidoHoy;
+        demandaPendiente += record.unmetDemand;
 
-        // unidades en transito (pedidos pendientes)
+        record.inventoryAfterDemand = disponible;
+        record.finalInventory = disponible;
+        record.backorder = demandaPendiente;
+
         record.pendingUnits = 0;
         for (const auto& order : sim.pending){
             record.pendingUnits += order.quantity;
         }
 
-        // Paso 5.2 Posición de inventario y decisión de reorden
-        record.inventoryPosition = record.finalInventory + record.pendingUnits - faltanteAcumulado;
+        record.inventoryPosition = record.finalInventory + record.pendingUnits - demandaPendiente;
         record.orderPlaced = 0;
 
-        // si la posición de inventario es menor o igual al punto de reorden y no hay en transito, emitimos un pedido
-        if (record.inventoryPosition <= sim.params.reorderPoint && record.pendingUnits == 0){
+        if (record.inventoryPosition <= sim.params.reorderPoint){
             record.orderPlaced = sim.params.eoq;
             
             PendingOrder newOrder;
@@ -127,54 +153,22 @@ void correrSimulacion(Simulation &sim){ // para todo el horizonte de simulacion
             newOrder.issueDay = record.day;
             newOrder.arrivalDay = record.day + sim.params.leadTime;
             sim.pending.push_back(newOrder);
-            record.nextArrivalDay = newOrder.arrivalDay;
+            sim.orders.push_back(newOrder); // registro con fecha de emision y de recepcion
+            record.pendingUnits += newOrder.quantity;
+            record.nextArrivalDay = sim.pending.front().arrivalDay;
 
         } else {
             record.nextArrivalDay = sim.pending.empty() ? 0 : sim.pending.front().arrivalDay;
         }
 
-        // se actualiza para el siguiente dia
         sim.inventory = record.finalInventory;
 
-        // se registra
         sim.records.push_back(record);
 
-        // Paso 5.3 Registro del dia
-        cout << t + 1 << " \t| " 
-             << Ut << " \t| " 
-             << record.demand << " \t| " 
-             << record.finalInventory << " \t\t| " 
-             << record.inventoryPosition << " \t\t| " 
-             << record.orderPlaced << " \t\t| " 
-             << record.received << "\n";
     }
 
-    // Paso 6. Indicadores de desempeño
-    int demandaTotal = 0;
-    int faltanteTotal = 0;
-    long long sumaInventarioFinal = 0;
-    int diasConFaltante = 0;
-    int pedidosTotales = sim.orders.size() + sim.pending.size();
-
-    for (const auto& rec : sim.records){
-        demandaTotal += rec.demand;
-        faltanteTotal += rec.unmetDemand;
-        sumaInventarioFinal += rec.finalInventory;
-        if (rec.unmetDemand > 0) diasConFaltante++;
-    }
-
-    double inventarioPromedio = static_cast<double>(sumaInventarioFinal) / sim.horizon;
-    double serviceLevel = (demandaTotal > 0) ? (1.0 - static_cast<double>(faltanteTotal) / demandaTotal) : 1.0;
-    double costoTotalOrdenes = pedidosTotales * sim.params.orderCost;
-    double costoTotalMantenimiento = inventarioPromedio * sim.params.holdingCost * (sim.horizon / 365.0);
-    double costoTotal = costoTotalOrdenes + costoTotalMantenimiento;
-
-    cout << "\nIndicadores de desempeño:\n";
-    cout << "Nivel de servicio por unidades: " << serviceLevel * 100 << "%\n";
-    cout << "Inventario promedio diario: " << inventarioPromedio << " unidades\n";
-    cout << "Número total de pedidos emitidos: " << pedidosTotales << "\n";
-    cout << "Costo total de pedidos: $" << costoTotalOrdenes << "\n";
-    cout << "Días con faltante: " << diasConFaltante << " días\n";
+    printDailyRecords(sim);
+    printOrders(sim);
 }
 
 

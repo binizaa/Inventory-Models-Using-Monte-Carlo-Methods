@@ -33,11 +33,17 @@ InventoryParams readParams(){
     p.leadTime = (int)readValue("  Tiempo de entrega L (dias): ");
     p.serviceLevel = readValue("  Nivel de servicio (ej. 0.95): ");
     p.initialInventory = (int)readValue("  Inventario inicial (unidades): ");
+    p.initialPendingQty = (int)readValue("  Pedido pendiente de recibir (unidades, 0 = ninguno): ");
+    if(p.initialPendingQty > 0)
+        p.initialPendingArrival = (int)readValue("  Dia en que llega ese pedido: ");
     return p;
 }
 
 void printUserParams(const InventoryParams &p){
     cout<<fixed<<setprecision(2)
         <<"  S = $"<<p.orderCost<<", H = $"<<p.holdingCost<<"/unidad/anio, L = "<<p.leadTime
-        <<" dias, nivel de servicio = "<<p.serviceLevel<<", inventario inicial = "<<p.initialInventory<<endl;
+        <<" dias, nivel de servicio = "<<p.serviceLevel<<", inventario inicial = "<<p.initialInventory;
+    if(p.initialPendingQty > 0)
+        cout<<", pedido pendiente = "<<p.initialPendingQty<<" (llega el dia "<<p.initialPendingArrival<<")";
+    cout<<endl;
 }

@@ -18,7 +18,9 @@
                 "${workspaceFolder}\\src\\analysis\\eoq.cpp",
                 "${workspaceFolder}\\src\\analysis\\stats.cpp",
                 "${workspaceFolder}\\src\\data\\data.cpp",
+                "${workspaceFolder}\\src\\data\\export.cpp",
                 "${workspaceFolder}\\src\\simulation\\simulation.cpp",
+                "${workspaceFolder}\\src\\simulation\\indicators.cpp",
                 "${workspaceFolder}\\src\\ui\\menu.cpp"
             ],
             "options": {

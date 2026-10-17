@@ -15,6 +15,8 @@ struct InventoryParams
     int leadTime;            // L: tiempo de entrega en dias
     double serviceLevel;     // probabilidad de no tener faltante en el ciclo
     int initialInventory;
+    int initialPendingQty = 0;      // pedido pendiente al inicio (0 = ninguno)
+    int initialPendingArrival = 0;  // dia en que llega ese pedido
 
     // Valores calculados
     double z = 0;

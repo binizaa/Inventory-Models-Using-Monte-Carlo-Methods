@@ -8,6 +8,7 @@
 
 
 const std::string DATA_FILE = "datos.csv";
+const std::string RESULTS_DIR = "resultados";
 
 const std::map<std::string,InventoryParams> DEFAULT_PARAMS = {
     {"Ciudad de México", {600, 3.0, 4, 0.95, 500}},
@@ -16,5 +17,8 @@ const std::map<std::string,InventoryParams> DEFAULT_PARAMS = {
 };
 
 const int DEFAULT_HORIZON = 30;
+
+// Semilla base; cada ciudad usa DEFAULT_SEED + su indice para simular de forma independiente
+const unsigned DEFAULT_SEED = 12345;
 
 #endif

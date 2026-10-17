@@ -1,3 +1,4 @@
+#include <cmath>
 #include <iostream>
 #include <map>
 #include <string>
@@ -9,6 +10,8 @@
 #include "ui/menu.h"
 #include "simulation/simulation.h"
 #include "analysis/stats.h"
+#include "simulation/indicators.h"
+#include "data/export.h"
 
 using namespace std;
 
@@ -59,30 +62,11 @@ int main(){
 
     vector<Simulation> simulations;
     for(auto &[city, p] : params){
-        simulations.push_back(initSimulation(city, p, horizon));
+        Simulation sim = initSimulation(city, p, horizon, DEFAULT_SEED + simulations.size());
 
-        cout<<endl<<"PASO 2  Condiciones iniciales de "<<city<<endl;
-        printSimulationSetup(simulations.back());
-    }
-
-    return 0;
-}
-
-"""
-// ----- Paso 2 y Ejecución -----
-    int horizon = DEFAULT_HORIZON;
-    if(useDefaults) cout<<endl<<"PASO 2  Horizonte de simulacion n = "<<horizon<<" dias"<<endl;
-    else horizon = (int)readValue("\nPASO 2  Horizonte de simulacion n (dias, mismo para todas las ciudades): ");
-
-    vector<Simulation> simulations;
-    for(auto &[city, p] : params){
-        Simulation sim = initSimulation(city, p, horizon);
-
-        // EXTRAER LA DISTRIBUCIÓN (Ajusta los nombres 'demanda' y 'probAcumulada' según tu struct real de la tabla)
-        auto freqTable = buildFrequencyTable(dailyDemand[city]);
-        for(const auto &row : freqTable) {
-            sim.demands.push_back(row.demanda);
-            sim.probsAcumuladas.push_back(row.probAcumulada);
+        for(const FreqRow &row : buildFrequencyTable(dailyDemand[city])){
+            sim.demands.push_back((int)round(row.mark));
+            sim.probsAcumuladas.push_back(row.cumRelFreq);
         }
 
         simulations.push_back(sim);
@@ -90,11 +74,21 @@ int main(){
         cout<<endl<<"PASO 2  Condiciones iniciales de "<<city<<endl;
         printSimulationSetup(simulations.back());
 
-        // EJECUTAR PASOS 3, 4, 5 y 6
+        // ----- Pasos 3, 4 y 5 -----
         cout<<endl<<"Ejecutando simulacion para "<<city<<"..."<<endl;
         correrSimulacion(simulations.back());
     }
 
+    // ----- Paso 6 -----
+    vector<Indicators> indicators;
+    for(const Simulation &sim : simulations){
+        indicators.push_back(computeIndicators(sim));
+
+        cout<<endl<<"PASO 6  Indicadores de desempeno de "<<sim.city<<endl;
+        printIndicators(indicators.back());
+    }
+    printComparison(simulations, indicators);
+    exportResults(RESULTS_DIR, simulations, indicators);
+
     return 0;
 }
-"""
