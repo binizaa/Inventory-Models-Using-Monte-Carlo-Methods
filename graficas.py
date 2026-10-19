@@ -88,6 +88,7 @@ def demanda_diaria(daily, cities, colors):
 
 def inventario(daily, orders, cities, colors):
     fig = Figure(figsize=(9, 2.8 * len(cities)), layout="constrained")
+    fig.get_layout_engine().set(rect=(0, 0, 1, 0.78))
     axes = fig.subplots(len(cities), 1, sharex=True, squeeze=False)[:, 0]
     last_day = daily["dia"].max()
     for ax, city in zip(axes, cities):
@@ -125,7 +126,60 @@ def inventario(daily, orders, cities, colors):
         Line2D([], [], color=REFERENCE, linewidth=1, linestyle="--", label="Punto de reorden"),
         Patch(color=REFERENCE, alpha=0.15, label="Inventario de seguridad"),
     ]
-    fig.legend(handles=handles, loc="outside upper left", ncol=5, fontsize=8)
+    fig.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, 0.92),
+               ncol=3, fontsize=8)
+    return fig
+
+
+def evolucion_ciudad(daily, orders, city, color):
+    d = daily[daily["ciudad"] == city].sort_values("dia")
+    city_orders = orders[orders["ciudad"] == city]
+    last_day = d["dia"].max()
+
+    fig = Figure(figsize=(13, 7), layout="constrained")
+    fig.get_layout_engine().set(rect=(0, 0, 1, 0.84))
+    inventory_ax = fig.subplots()
+    demand_ax = inventory_ax.twinx()
+    order_color = "#eb6834"
+    demand_color = "#8a8984"
+
+    demand_ax.bar(d["dia"], d["demanda"], width=0.72, color=demand_color, alpha=0.42,
+                  label="Demanda diaria", zorder=1)
+    inventory_ax.plot(d["dia"], d["inv_final"], color=color, linewidth=2.5,
+                      label="Inventario final", zorder=3)
+
+    if not city_orders.empty:
+        inventory_ax.vlines(city_orders["emision"], 0, city_orders["cantidad"],
+                            color=order_color, alpha=0.45, linestyles=":", zorder=2)
+        inventory_ax.scatter(city_orders["emision"], city_orders["cantidad"], color=order_color,
+                             edgecolors=SURFACE, linewidths=1.2, marker="D", s=75,
+                             label="Pedido emitido", zorder=4)
+
+    received = d[d["recepcion"] > 0]
+    if not received.empty:
+        inventory_ax.scatter(received["dia"], received["recepcion"], facecolors="none",
+                             edgecolors=order_color, linewidths=2, marker="o", s=85,
+                             label="Pedido recibido", zorder=5)
+
+    rop, ss = d["rop"].iloc[0], d["ss"].iloc[0]
+    inventory_ax.axhspan(0, ss, color=REFERENCE, alpha=0.12, linewidth=0, zorder=0)
+    inventory_ax.axhline(rop, color=REFERENCE, linewidth=1, linestyle="--", label=f"ROP = {rop}")
+    inventory_ax.axhline(ss, color=REFERENCE, linewidth=1, linestyle=":", label=f"SS = {ss}")
+
+    inventory_ax.set_xlim(0, last_day + 1)
+    inventory_ax.set_ylim(bottom=0)
+    inventory_ax.set_xlabel("Día")
+    inventory_ax.set_ylabel("Inventario y pedidos (unidades)")
+    demand_ax.set_ylabel("Demanda diaria (unidades)")
+    demand_ax.tick_params(axis="y", colors=demand_color)
+    demand_ax.spines["right"].set_color(demand_color)
+    demand_ax.grid(False)
+    _suptitle(fig, f"Demanda, inventario y pedidos · {city}")
+
+    handles, labels = inventory_ax.get_legend_handles_labels()
+    demand_handles, demand_labels = demand_ax.get_legend_handles_labels()
+    fig.legend(handles + demand_handles, labels + demand_labels, loc="upper center",
+               bbox_to_anchor=(0.5, 0.92), ncol=3, fontsize=9)
     return fig
 
 

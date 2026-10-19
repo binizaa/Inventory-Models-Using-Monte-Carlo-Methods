@@ -7,6 +7,7 @@ las graficas a partir de los CSV que deja en resultados/.
 Uso:  .venv/bin/python interfaz.py
 """
 
+import math
 import os
 import re
 import shutil
@@ -45,6 +46,7 @@ DEFAULT_HORIZON = 30
 
 PROMPTS = [
     "Opcion: ",
+    "  Aumento de demanda (%; 0 = sin aumento): ",
     "  Costo por pedido S ($): ",
     "  Costo anual de mantener una unidad H ($): ",
     "  Tiempo de entrega L (dias): ",
@@ -88,6 +90,7 @@ DAILY_COLUMNS = [
 ]
 
 CHART_TABS = [
+    ("evolucion.png", "Evolución por ciudad"),
     ("demanda_diaria.png", "Demanda"),
     ("inventario.png", "Inventario"),
     ("pedidos.png", "Pedidos"),
@@ -99,9 +102,9 @@ class SimulationError(Exception):
     pass
 
 
-def build_input(params, horizon):
+def build_input(params, horizon, demand_increase_percent=0):
     """Texto que se le pasa a ./main por la entrada estandar (opcion 2 del menu)."""
-    lines = ["2"]
+    lines = ["2", f"{demand_increase_percent:g}"]
     for city in CITIES:
         p = params[city]
         values = [p["S"], p["H"], p["L"], p["nivel"], p["inv"], p["pend"]]
@@ -119,7 +122,7 @@ def with_echo(output, stdin_text):
     return pattern.sub(lambda m: m.group(0) + next(values, "") + "\n", output)
 
 
-def run_simulation(params, horizon):
+def run_simulation(params, horizon, demand_increase_percent=0):
     if shutil.which("make"):
         build = subprocess.run(["make"], cwd=ROOT, capture_output=True, text=True)
         if build.returncode != 0:
@@ -127,7 +130,7 @@ def run_simulation(params, horizon):
     elif not EXECUTABLE.exists():
         raise SimulationError(f"No se encontró {EXECUTABLE.name}. Compila el programa primero.")
 
-    stdin_text = build_input(params, horizon)
+    stdin_text = build_input(params, horizon, demand_increase_percent)
     run = subprocess.run([str(EXECUTABLE)], cwd=ROOT, input=stdin_text, capture_output=True,
                          text=True, encoding="utf-8", errors="replace", timeout=60)
     if run.returncode != 0:
@@ -215,21 +218,26 @@ class App(ttk.Frame):
         self.horizon_entry = ttk.Entry(side, width=8, justify="right")
         self.horizon_entry.grid(row=row + 2, column=3, sticky="e", padx=(8, 0))
 
+        ttk.Label(side, text="Aumento de demanda (%)").grid(row=row + 3, column=0, sticky="w")
+        self.demand_increase_entry = ttk.Entry(side, width=8, justify="right")
+        self.demand_increase_entry.grid(row=row + 3, column=3, sticky="e", padx=(8, 0))
+
         buttons = ttk.Frame(side)
-        buttons.grid(row=row + 3, column=0, columnspan=4, sticky="ew", pady=(18, 0))
+        buttons.grid(row=row + 4, column=0, columnspan=4, sticky="ew", pady=(18, 0))
         buttons.columnconfigure(0, weight=1)
         ttk.Button(buttons, text="Valores de ejemplo", command=self.reset_defaults).grid(row=0, column=0, sticky="w")
         ttk.Button(buttons, text="Simular", command=self.simulate, default="active").grid(row=0, column=1, sticky="e")
 
-        side.rowconfigure(row + 4, weight=1)
+        side.rowconfigure(row + 5, weight=1)
         ttk.Button(side, text="Guardar gráficas como PNG", command=self.save_charts).grid(
-            row=row + 5, column=0, columnspan=4, sticky="w")
+            row=row + 6, column=0, columnspan=4, sticky="w")
 
     def reset_defaults(self):
         for city in CITIES:
             for key, _, _ in FIELDS:
                 self._set_entry(self.entries[(city, key)], DEFAULTS[city][key])
         self._set_entry(self.horizon_entry, DEFAULT_HORIZON)
+        self._set_entry(self.demand_increase_entry, 0)
 
     @staticmethod
     def _set_entry(entry, value):
@@ -237,7 +245,7 @@ class App(ttk.Frame):
         entry.insert(0, str(value))
 
     def read_params(self):
-        """Lee y valida los campos; devuelve (params, horizonte) o None si hay un error."""
+        """Lee y valida los campos; devuelve (params, horizonte, aumento) o None."""
         params = {}
         for city in CITIES:
             params[city] = {}
@@ -274,7 +282,16 @@ class App(ttk.Frame):
             horizon = 0
         if horizon < 1:
             return self._invalid(self.horizon_entry, "El horizonte debe ser un número entero de días mayor que 0.")
-        return params, horizon
+        try:
+            demand_increase_percent = float(self.demand_increase_entry.get().strip().replace(",", "."))
+        except ValueError:
+            demand_increase_percent = -1
+        if not math.isfinite(demand_increase_percent) or demand_increase_percent < 0:
+            return self._invalid(
+                self.demand_increase_entry,
+                "El aumento de demanda debe ser un porcentaje mayor o igual que 0."
+            )
+        return params, horizon, demand_increase_percent
 
     def _invalid(self, entry, message):
         entry.focus_set()
@@ -302,6 +319,21 @@ class App(ttk.Frame):
             frame = ttk.Frame(self.notebook)
             self.notebook.add(frame, text=title)
             self.chart_frames[name] = frame
+            if name == "evolucion.png":
+                controls = ttk.Frame(frame, padding=(12, 10, 12, 4))
+                controls.grid(row=0, column=0, sticky="ew")
+                ttk.Label(controls, text="Ciudad").pack(side="left")
+                self.timeline_city_choice = ttk.Combobox(
+                    controls, values=CITIES, state="readonly", width=22
+                )
+                self.timeline_city_choice.set(CITIES[0])
+                self.timeline_city_choice.pack(side="left", padx=(8, 0))
+                self.timeline_city_choice.bind("<<ComboboxSelected>>", lambda _: self.show_timeline())
+
+                self.chart_plot_frame = ttk.Frame(frame)
+                self.chart_plot_frame.grid(row=1, column=0, sticky="nsew")
+                frame.rowconfigure(1, weight=1)
+                frame.columnconfigure(0, weight=1)
 
         output_tab = ttk.Frame(self.notebook, padding=(0, 8, 0, 0))
         self.notebook.add(output_tab, text="Salida del programa")
@@ -387,13 +419,13 @@ class App(ttk.Frame):
         values = self.read_params()
         if values is None:
             return
-        params, horizon = values
+        params, horizon, demand_increase_percent = values
 
         self.set_status("Simulando…")
         self.master.config(cursor="watch")
         self.update_idletasks()
         try:
-            output = run_simulation(params, horizon)
+            output = run_simulation(params, horizon, demand_increase_percent)
         except (SimulationError, subprocess.TimeoutExpired, OSError) as error:
             self.set_status(str(error).splitlines()[0], error=True)
             self._show_output(str(error))
@@ -404,10 +436,17 @@ class App(ttk.Frame):
 
         self._show_output(output)
         self.load_results()
-        self.set_status(f"Simulación de {horizon} días completada. Resultados guardados en resultados/.")
+        self.set_status(
+            f"Simulación de {horizon} días completada con aumento de demanda de "
+            f"{demand_increase_percent:g}%. Resultados guardados en resultados/."
+        )
 
     def load_results(self):
         self.daily, self.orders, summary, cities, colors = graficas.load()
+        self.colors = colors
+        self.timeline_city_choice.configure(values=cities)
+        if self.timeline_city_choice.get() not in cities:
+            self.timeline_city_choice.set(cities[0])
 
         first = self.daily.groupby("ciudad").first()
         self.params_table.delete(*self.params_table.get_children())
@@ -426,6 +465,9 @@ class App(ttk.Frame):
 
         self.figures = graficas.build_all(self.daily, self.orders, summary, cities, colors)
         for name, frame in self.chart_frames.items():
+            if name == "evolucion.png":
+                self.show_timeline()
+                continue
             if name in self.canvases:
                 self.canvases[name].get_tk_widget().destroy()
             canvas = FigureCanvasTkAgg(self.figures[name], master=frame)
@@ -433,6 +475,27 @@ class App(ttk.Frame):
             canvas.get_tk_widget().pack(fill="both", expand=True)
             canvas.draw()
             self.canvases[name] = canvas
+
+    def show_timeline(self):
+        if self.daily is None:
+            return
+        city = self.timeline_city_choice.get()
+        if not city:
+            return
+
+        previous = self.figures.get("evolucion.png")
+        if previous is not None:
+            previous.clear()
+        if "evolucion.png" in self.canvases:
+            self.canvases["evolucion.png"].get_tk_widget().destroy()
+
+        fig = graficas.evolucion_ciudad(self.daily, self.orders, city, self.colors[city])
+        canvas = FigureCanvasTkAgg(fig, master=self.chart_plot_frame)
+        canvas.get_tk_widget().configure(background=graficas.SURFACE, highlightthickness=0)
+        canvas.get_tk_widget().pack(fill="both", expand=True)
+        canvas.draw()
+        self.figures["evolucion.png"] = fig
+        self.canvases["evolucion.png"] = canvas
 
     def show_daily(self):
         if self.daily is None:

@@ -1,5 +1,6 @@
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <map>
 #include <string>
 #include <vector>
@@ -25,6 +26,28 @@ int main(){
         <<"  |  Dias observados: "<<dailyDemand.begin()->second.size()<<endl;
 
     bool useDefaults = askMenuOption() == DEFAULT_EXAMPLE;
+    double demandIncreasePercent = 0;
+    if(!useDefaults){
+        do{
+            demandIncreasePercent = readValue("  Aumento de demanda (%; 0 = sin aumento): ");
+            if(!isfinite(demandIncreasePercent) || demandIncreasePercent < 0)
+                cout<<"El aumento debe ser un porcentaje mayor o igual que 0."<<endl;
+        }while(!isfinite(demandIncreasePercent) || demandIncreasePercent < 0);
+
+        const long double demandMultiplier = 1.0L + demandIncreasePercent / 100.0L;
+        for(auto &[city, demand] : dailyDemand){
+            for(int &dayDemand : demand){
+                const long double increasedDemand = round(dayDemand * demandMultiplier);
+                if(increasedDemand > numeric_limits<int>::max()){
+                    cerr<<"El aumento de demanda es demasiado grande para "<<city<<"."<<endl;
+                    return 1;
+                }
+                dayDemand = static_cast<int>(increasedDemand);
+            }
+        }
+        cout<<"Aumento de demanda aplicado a todas las ciudades: "
+            <<demandIncreasePercent<<"%"<<endl;
+    }
 
     // ----- Paso 1.1 -----
     map<string,Stats> stats;
