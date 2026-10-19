@@ -1,5 +1,10 @@
 # Actividad 4.4 · Simulación de inventarios EOQ con Monte Carlo
 
+  Juana Biniza Cruz Ruiz  A01666726 
+  Jazmin Padilla Ramos    A01735947 
+  Alejandro Martínez Páez  A01286707 
+  Diego Alfonso Villarreal Grimaldo A01571264
+
 Este repositorio implementa una simulación de inventarios para varias ciudades, combinando el modelo EOQ (cantidad económica de pedido) con generación de demanda mediante Monte Carlo. Permite configurar los parámetros, ejecutar simulaciones para un horizonte definido, consultar indicadores y visualizar los resultados.
 
 El proyecto utiliza **C++17** para los cálculos de análisis y simulación, y **Python 3** para la interfaz gráfica y las visualizaciones. La interfaz está construida con Tkinter; las gráficas y la lectura de resultados utilizan Matplotlib y pandas. El programa C++ se compila con `g++` o `make`.
